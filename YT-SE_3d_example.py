@@ -10,7 +10,9 @@ class Cam:
     def events(self, event):
         if event.type == pygame.MOUSEMOTION:
             x, y = event.rel; x/=200; y/=200
-            self.rot[0]+=y; self.rot[1]+=x
+            if (self.rot[0] <= 1.571 and y > 0) or (self.rot[0] >= -1.571 and y < 0):
+                self.rot[0]+=y
+            self.rot[1]+=x
 
     def update(self, dt, key):
         s = 0.25#dt*10
@@ -19,6 +21,7 @@ class Cam:
         if key[pygame.K_SPACE]: self.pos[1]-=s
 
         x,y = s*math.sin(self.rot[1]),s*math.cos(self.rot[1])
+        x,y = x/2,y/2
         if key[pygame.K_w]: self.pos[0]+=x; self.pos[2]+=y
         if key[pygame.K_s]: self.pos[0]-=x; self.pos[2]-=y
         if key[pygame.K_a]: self.pos[0]-=y; self.pos[2]+=x
@@ -47,10 +50,10 @@ def update_fps():
 
 pygame.init()
 font = pygame.font.SysFont("Arial", 18)
-fps = 60
+fps = 0 # = 0 is unlimited
 w,h = 640,480; cx,cy = w//2, h//2
 #w,h = 1920,1080; cx,cy = w//2, h//2
-screen = pygame.display.set_mode((w,h))
+screen = pygame.display.set_mode((w,h), pygame.RESIZABLE)
 #screen = pygame.display.set_mode((0,0), pygame.FULLSCREEN)
 clock = pygame.time.Clock()
 cam = Cam((0,0,-5))
@@ -65,6 +68,7 @@ focus = 0; opposite = 1; freeze = False
 
 while True:
     dt = clock.tick(fps)/1000
+    cx,cy = pygame.display.get_window_size(); cx,cy = cx//2,cy//2
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT: pygame.quit(); sys.exit()
@@ -83,7 +87,7 @@ while True:
         if freeze == False:
             cam.events(event)
 
-    screen.fill((0,0,0))
+    screen.fill((130, 130, 130))
 
     face_list = []; face_color = []; depth = []
 
@@ -131,6 +135,9 @@ while True:
         except: pass
 
     screen.blit(update_fps(), (10,0))
+    pygame.draw.line(screen, (200, 200, 200), (cx-10, cy), (cx+10, cy), width=3)
+    pygame.draw.line(screen, (200, 200, 200), (cx, cy-10), (cx, cy+10), width=3)
+
     if freeze == False:
         key = pygame.key.get_pressed()
         pygame.display.flip()
