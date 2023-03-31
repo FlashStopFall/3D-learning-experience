@@ -1,9 +1,5 @@
 import pygame, sys, math, random, os
 
-#os.environ["SDL_VIDEO_CENTERED"]='1'
-#os.environ["SDL_VIDEODRIVER"]='dummy'
-#os.environ["DISPLAY"]=':0'
-
 def rotate2d(pos, rad): x,y=pos; s,c = math.sin(rad),math.cos(rad); return x*c-y*s,y*c+x*s
 
 class Cam:
@@ -17,7 +13,7 @@ class Cam:
             self.rot[0]+=y; self.rot[1]+=x
 
     def update(self, dt, key):
-        s = dt*10
+        s = 0.25#dt*10
 
         if key[pygame.K_LSHIFT]: self.pos[1]+=s
         if key[pygame.K_SPACE]: self.pos[1]-=s
@@ -44,8 +40,14 @@ class Cube:
         x,y,z = pos
         self.verts = [(x+X/2,y+Y/2,z+Z/2) for X,Y,Z in self.vertices]
 
+def update_fps():
+    frames = str(int(clock.get_fps()))
+    fps_text = font.render(frames, 1, pygame.Color("green"))
+    return fps_text
 
 pygame.init()
+font = pygame.font.SysFont("Arial", 18)
+fps = 60
 w,h = 640,480; cx,cy = w//2, h//2
 #w,h = 1920,1080; cx,cy = w//2, h//2
 screen = pygame.display.set_mode((w,h))
@@ -59,15 +61,27 @@ occupied = []
 cube1 = Cube((0,0,0))
 cube2 = Cube((0,0,2))
 objects = [cube1, cube2]
+focus = 0; opposite = 1; freeze = False
 
 while True:
-    dt = clock.tick()/1000
+    dt = clock.tick(fps)/1000
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT: pygame.quit(); sys.exit()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE: pygame.quit(); sys.exit()
-        cam.events(event)
+            if event.key == pygame.K_TAB:
+                pygame.mouse.set_visible(opposite); pygame.event.set_grab(focus)
+                if freeze == False:
+                    focus = 1; opposite = 0; freeze = True
+                else:
+                    focus = 0; opposite = 1; freeze = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            pygame.mouse.set_visible(opposite); pygame.event.set_grab(focus)
+            focus = 0; opposite = 1; freeze = False
+                    
+        if freeze == False:
+            cam.events(event)
 
     screen.fill((0,0,0))
 
@@ -116,6 +130,8 @@ while True:
         try: pygame.draw.polygon(screen,face_color[i],face_list[i])
         except: pass
 
-    key = pygame.key.get_pressed()
-    pygame.display.flip()
-    cam.update(dt,key)
+    screen.blit(update_fps(), (10,0))
+    if freeze == False:
+        key = pygame.key.get_pressed()
+        pygame.display.flip()
+        cam.update(dt,key)
